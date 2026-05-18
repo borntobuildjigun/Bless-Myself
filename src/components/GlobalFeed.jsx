@@ -94,7 +94,7 @@ const GlobalFeed = ({ currentUser }) => {
         feedItems.map((item) => {
           const isBlessed = blessedIds.includes(item.id);
           return (
-            <div key={item.id} className="feed-card glass-panel">
+            <article key={item.id} className="feed-card glass-panel">
               <p className="card-text">"{item.text}"</p>
               <div className="card-footer">
                 <div className="card-meta">
@@ -116,7 +116,7 @@ const GlobalFeed = ({ currentUser }) => {
                   <span className="count">{item.bless_count || 0}</span>
                 </button>
               </div>
-            </div>
+            </article>
           );
         })
       )}

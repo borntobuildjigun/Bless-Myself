@@ -23,7 +23,7 @@ const Home = ({ nickname, onAddBlessing }) => {
             <Sparkles size={16} className="text-accent" />
             <span>Small Healing, Big Impact</span>
           </div>
-          <h2 className="hero-title">What are you grateful for today?</h2>
+          <h1 className="hero-title">What are you grateful for today?</h1>
           
           <form 
             onSubmit={handleSubmit} 
