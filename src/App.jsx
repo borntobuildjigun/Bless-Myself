@@ -41,7 +41,8 @@ function App() {
   };
 
   const handleAddBlessing = async (text) => {
-    const authorName = session ? session.user.email.split('@')[0] : nickname;
+    // Always use the user-defined nickname (default: 익명) for anonymity
+    const authorName = nickname;
     
     const { data, error } = await supabase
       .from('blessings')
@@ -62,16 +63,13 @@ function App() {
     }
   };
 
-  // Optionally, if session exists, we can use their email prefix as a default nickname
-  const displayNickname = session ? (session.user.email.split('@')[0]) : nickname;
-
   return (
     <Router>
       <div className="app-container">
         <Header onOpenSettings={() => setIsSettingsOpen(true)} />
         <main className="main-content">
           <Routes>
-            <Route path="/" element={<Home nickname={displayNickname} onAddBlessing={handleAddBlessing} />} />
+            <Route path="/" element={<Home nickname={nickname} onAddBlessing={handleAddBlessing} />} />
             <Route path="/archive" element={<Archive myBlessings={myBlessings} />} />
           </Routes>
         </main>
