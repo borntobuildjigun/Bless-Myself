@@ -1,0 +1,34 @@
+import React from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { Settings, History, Home } from 'lucide-react';
+
+const Header = ({ onOpenSettings }) => {
+  const location = useLocation();
+  const isArchive = location.pathname === '/archive';
+
+  return (
+    <header className="app-header">
+      <div className="header-left">
+        {isArchive ? (
+          <Link to="/" className="icon-btn" aria-label="Home">
+            <Home size={24} />
+          </Link>
+        ) : (
+          <Link to="/archive" className="icon-btn" aria-label="Archive">
+            <History size={24} />
+          </Link>
+        )}
+      </div>
+      <div className="header-center">
+        <h1 className="logo-text">Bless Myself</h1>
+      </div>
+      <div className="header-right">
+        <button className="icon-btn" onClick={onOpenSettings} aria-label="Settings">
+          <Settings size={24} />
+        </button>
+      </div>
+    </header>
+  );
+};
+
+export default Header;
