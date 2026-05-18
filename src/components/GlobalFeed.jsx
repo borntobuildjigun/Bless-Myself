@@ -1,64 +1,125 @@
 import React, { useState, useEffect } from 'react';
 import { Heart } from 'lucide-react';
-
-const MOCK_DATA = [
-  { id: 1, text: "I finally finished reading that book I started months ago.", author: "Bookworm", blessCount: 12, date: "2 mins ago" },
-  { id: 2, text: "Got a free coffee on my way to work today!", author: "CoffeeLover", blessCount: 45, date: "15 mins ago" },
-  { id: 3, text: "오늘 날씨가 너무 좋아서 산책을 다녀왔다.", author: "맑은하늘", blessCount: 8, date: "1 hour ago" },
-  { id: 4, text: "Spent quality time with my family.", author: "FamilyFirst", blessCount: 112, date: "3 hours ago" },
-  { id: 5, text: "스스로에게 작은 칭찬을 해준 하루. 고생했어.", author: "토닥토닥", blessCount: 34, date: "5 hours ago" },
-  { id: 6, text: "Saw a beautiful sunset that made me forget my worries.", author: "SkyWatcher", blessCount: 89, date: "8 hours ago" }
-];
+import { supabase } from '../lib/supabase';
 
 const GlobalFeed = ({ currentUser }) => {
   const [feedItems, setFeedItems] = useState([]);
+  const [blessedIds, setBlessedIds] = useState([]);
   
   useEffect(() => {
-    // In a real app, this would fetch from an API.
-    // For now, we simulate a feed loaded with mock data.
-    setFeedItems(MOCK_DATA);
+    // Load local history of blessed items
+    const stored = localStorage.getItem('blessed_ids');
+    if (stored) setBlessedIds(JSON.parse(stored));
+
+    fetchBlessings();
+
+    // Subscribe to new blessings in realtime
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'blessings' },
+        (payload) => {
+          setFeedItems((current) => [payload.new, ...current]);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'blessings' },
+        (payload) => {
+          setFeedItems((current) =>
+            current.map((item) => (item.id === payload.new.id ? payload.new : item))
+          );
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
-  const handleBless = (id) => {
+  const fetchBlessings = async () => {
+    const { data, error } = await supabase
+      .from('blessings')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(50);
+    
+    if (error) {
+      console.error('Error fetching blessings:', error);
+    } else {
+      setFeedItems(data || []);
+    }
+  };
+
+  const handleBless = async (id) => {
+    if (blessedIds.includes(id)) return; // Prevent multiple blessings locally
+
+    // Optimistic UI update
+    const newBlessedIds = [...blessedIds, id];
+    setBlessedIds(newBlessedIds);
+    localStorage.setItem('blessed_ids', JSON.stringify(newBlessedIds));
+
     setFeedItems(items => items.map(item => {
       if (item.id === id) {
-        const isBlessed = item.blessedByMe;
-        return {
-          ...item,
-          blessCount: isBlessed ? item.blessCount - 1 : item.blessCount + 1,
-          blessedByMe: !isBlessed
-        };
+        return { ...item, bless_count: (item.bless_count || 0) + 1 };
       }
       return item;
     }));
+
+    // Call Supabase RPC to increment in DB safely
+    const { error } = await supabase.rpc('increment_bless_count', { row_id: id });
+    if (error) {
+      console.error('Error incrementing bless count:', error);
+    }
+  };
+
+  // Helper to format date
+  const formatTimeAgo = (dateString) => {
+    const diff = Date.now() - new Date(dateString).getTime();
+    const minutes = Math.floor(diff / 60000);
+    if (minutes < 1) return 'Just now';
+    if (minutes < 60) return `${minutes} mins ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours} hours ago`;
+    return `${Math.floor(hours / 24)} days ago`;
   };
 
   return (
     <div className="global-feed">
-      {feedItems.map((item) => (
-        <div key={item.id} className="feed-card glass-panel">
-          <p className="card-text">"{item.text}"</p>
-          <div className="card-footer">
-            <div className="card-meta">
-              <span className="author">{item.author}</span>
-              <span className="dot">•</span>
-              <span className="date">{item.date}</span>
+      {feedItems.length === 0 ? (
+        <p className="help-text" style={{ textAlign: 'center', marginTop: '2rem' }}>No blessings yet. Be the first!</p>
+      ) : (
+        feedItems.map((item) => {
+          const isBlessed = blessedIds.includes(item.id);
+          return (
+            <div key={item.id} className="feed-card glass-panel">
+              <p className="card-text">"{item.text}"</p>
+              <div className="card-footer">
+                <div className="card-meta">
+                  <span className="author">{item.author}</span>
+                  <span className="dot">•</span>
+                  <span className="date">{formatTimeAgo(item.created_at)}</span>
+                </div>
+                <button 
+                  className={`bless-btn ${isBlessed ? 'active' : ''}`}
+                  onClick={() => handleBless(item.id)}
+                  aria-label="Bless this post"
+                  disabled={isBlessed}
+                >
+                  <Heart 
+                    size={18} 
+                    className="heart-icon" 
+                    fill={isBlessed ? 'currentColor' : 'none'} 
+                  />
+                  <span className="count">{item.bless_count || 0}</span>
+                </button>
+              </div>
             </div>
-            <button 
-              className={`bless-btn ${item.blessedByMe ? 'active' : ''}`}
-              onClick={() => handleBless(item.id)}
-              aria-label="Bless this post"
-            >
-              <Heart 
-                size={18} 
-                className="heart-icon" 
-                fill={item.blessedByMe ? 'currentColor' : 'none'} 
-              />
-              <span className="count">{item.blessCount}</span>
-            </button>
-          </div>
-        </div>
-      ))}
+          );
+        })
+      )}
     </div>
   );
 };

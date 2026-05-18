@@ -40,15 +40,26 @@ function App() {
     setIsSettingsOpen(false);
   };
 
-  const handleAddBlessing = (text) => {
-    const newBlessing = {
-      id: Date.now(),
-      text,
-      date: new Date().toISOString(),
-    };
-    const updated = [newBlessing, ...myBlessings];
-    setMyBlessings(updated);
-    localStorage.setItem('my_blessings', JSON.stringify(updated));
+  const handleAddBlessing = async (text) => {
+    const authorName = session ? session.user.email.split('@')[0] : nickname;
+    
+    const { data, error } = await supabase
+      .from('blessings')
+      .insert([{ text, author: authorName, bless_count: 0 }])
+      .select();
+
+    if (error) {
+      console.error('Error inserting blessing:', error);
+      alert('Failed to post blessing. Please try again.');
+      return;
+    }
+
+    if (data && data.length > 0) {
+      const newBlessing = data[0];
+      const updated = [newBlessing, ...myBlessings];
+      setMyBlessings(updated);
+      localStorage.setItem('my_blessings', JSON.stringify(updated));
+    }
   };
 
   // Optionally, if session exists, we can use their email prefix as a default nickname
