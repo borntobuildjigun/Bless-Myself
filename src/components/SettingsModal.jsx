@@ -27,7 +27,7 @@ const SettingsModal = ({ currentNickname, onClose, onSave, session }) => {
     if (error) {
       setMessage(error.message);
     } else {
-      setMessage('Check your email for the login link! (Or you might be logged in already if email confirmation is off)');
+      setMessage('가입을 환영합니다! 🎉 입력하신 이메일로 인증 링크가 발송되었으니 메일함을 확인해 주세요.');
     }
     setLoading(false);
   };
