@@ -105,7 +105,7 @@ const GlobalFeed = ({ currentUser }) => {
                 <button 
                   className={`bless-btn ${isBlessed ? 'active' : ''}`}
                   onClick={() => handleBless(item.id)}
-                  aria-label="Bless this post"
+                  aria-label={isBlessed ? `You blessed this post. Total blessings: ${item.bless_count || 0}` : `Bless this gratitude post by ${item.author}`}
                   disabled={isBlessed}
                 >
                   <Heart 

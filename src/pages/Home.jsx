@@ -16,8 +16,8 @@ const Home = ({ nickname, onAddBlessing }) => {
   };
 
   return (
-    <div className="home-page">
-      <div className="hero-section">
+    <main className="home-page">
+      <section className="hero-section" aria-label="Gratitude input section">
         <div className="hero-content">
           <div className="greeting-pill">
             <Sparkles size={16} className="text-accent" />
@@ -28,6 +28,7 @@ const Home = ({ nickname, onAddBlessing }) => {
           <form 
             onSubmit={handleSubmit} 
             className={`bless-form ${isFocused ? 'focused' : ''}`}
+            aria-label="Gratitude entry form"
           >
             <div className="input-wrapper">
               <input
@@ -39,6 +40,7 @@ const Home = ({ nickname, onAddBlessing }) => {
                 placeholder="Write a small blessing or gratitude..."
                 maxLength={100}
                 autoComplete="off"
+                aria-label="Write a small blessing or gratitude"
               />
               <button 
                 type="submit" 
@@ -54,16 +56,16 @@ const Home = ({ nickname, onAddBlessing }) => {
             </div>
           </form>
         </div>
-      </div>
+      </section>
       
-      <div className="feed-section">
+      <section className="feed-section" aria-label="Global blessings feed">
         <div className="feed-header">
-          <h3>Global Blessings</h3>
+          <h2>Global Blessings</h2>
           <p>Read what others are grateful for</p>
         </div>
         <GlobalFeed currentUser={nickname} />
-      </div>
-    </div>
+      </section>
+    </main>
   );
 };
 
