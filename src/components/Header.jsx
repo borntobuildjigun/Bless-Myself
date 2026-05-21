@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Settings, History, Home } from 'lucide-react';
+import { Settings, Leaf, Home } from 'lucide-react';
 
 const Header = ({ onOpenSettings }) => {
   const location = useLocation();
@@ -14,8 +14,8 @@ const Header = ({ onOpenSettings }) => {
             <Home size={24} />
           </Link>
         ) : (
-          <Link to="/archive" className="icon-btn" aria-label="Archive">
-            <History size={24} />
+          <Link to="/archive" className="icon-btn" aria-label="My Garden">
+            <Leaf size={24} />
           </Link>
         )}
       </div>
