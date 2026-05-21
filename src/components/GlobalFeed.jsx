@@ -3,10 +3,20 @@ import { Heart } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const GlobalFeed = ({ currentUser, feedRef }) => {
+const GlobalFeed = ({ currentUser, feedRef, newlyInsertedItem }) => {
   const [feedItems, setFeedItems] = useState([]);
   const [blessedIds, setBlessedIds] = useState([]);
   
+  useEffect(() => {
+    if (newlyInsertedItem) {
+      setFeedItems((current) => {
+        // Prevent duplicate if realtime event already added it
+        if (current.some(item => item.id === newlyInsertedItem.id)) return current;
+        return [newlyInsertedItem, ...current];
+      });
+    }
+  }, [newlyInsertedItem]);
+
   useEffect(() => {
     // Load local history of blessed items
     const stored = localStorage.getItem('blessed_ids');
@@ -21,7 +31,10 @@ const GlobalFeed = ({ currentUser, feedRef }) => {
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'blessings' },
         (payload) => {
-          setFeedItems((current) => [payload.new, ...current]);
+          setFeedItems((current) => {
+            if (current.some(item => item.id === payload.new.id)) return current;
+            return [payload.new, ...current];
+          });
         }
       )
       .on(

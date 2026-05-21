@@ -1,27 +1,35 @@
 import React, { useState, useRef } from 'react';
 import GlobalFeed from '../components/GlobalFeed';
-import { Sparkles, Send } from 'lucide-react';
+import { Sparkles, Send, Loader2 } from 'lucide-react';
 
 const Home = ({ nickname, onAddBlessing }) => {
   const [text, setText] = useState('');
   const [isFocused, setIsFocused] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [newlyInsertedItem, setNewlyInsertedItem] = useState(null);
   const feedRef = useRef(null);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (text.trim()) {
-      onAddBlessing(text.trim());
-      setText('');
+    if (text.trim() && !isSubmitting) {
+      setIsSubmitting(true);
+      const insertedData = await onAddBlessing(text.trim());
+      setIsSubmitting(false);
       
-      // Auto-scroll to feed smoothly
-      if (feedRef.current) {
-        setTimeout(() => {
-          // Adjust scroll position slightly to account for sticky header
-          const yOffset = -80; 
-          const element = feedRef.current;
-          const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
-          window.scrollTo({ top: y, behavior: 'smooth' });
-        }, 100);
+      if (insertedData) {
+        setText('');
+        setNewlyInsertedItem(insertedData);
+        
+        // Auto-scroll to feed smoothly right after updating state
+        if (feedRef.current) {
+          setTimeout(() => {
+            // Adjust scroll position slightly to account for sticky header
+            const yOffset = -80; 
+            const element = feedRef.current;
+            const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+            window.scrollTo({ top: y, behavior: 'smooth' });
+          }, 50); // Minimal delay to allow render
+        }
       }
     }
   };
@@ -52,14 +60,15 @@ const Home = ({ nickname, onAddBlessing }) => {
                 maxLength={100}
                 autoComplete="off"
                 aria-label="Write a small blessing or gratitude"
+                disabled={isSubmitting}
               />
               <button 
                 type="submit" 
                 className="submit-btn" 
-                disabled={!text.trim()}
+                disabled={!text.trim() || isSubmitting}
                 aria-label="Share blessing"
               >
-                <Send size={20} />
+                {isSubmitting ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} />}
               </button>
             </div>
             <div className="preview-indicator">
@@ -74,7 +83,7 @@ const Home = ({ nickname, onAddBlessing }) => {
           <h2>Global Blessings</h2>
           <p>Read what others are grateful for</p>
         </div>
-        <GlobalFeed currentUser={nickname} feedRef={feedRef} />
+        <GlobalFeed currentUser={nickname} feedRef={feedRef} newlyInsertedItem={newlyInsertedItem} />
       </section>
     </main>
   );
