@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Heart } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { motion, AnimatePresence } from 'framer-motion';
 
-const GlobalFeed = ({ currentUser }) => {
+const GlobalFeed = ({ currentUser, feedRef }) => {
   const [feedItems, setFeedItems] = useState([]);
   const [blessedIds, setBlessedIds] = useState([]);
   
@@ -87,38 +88,51 @@ const GlobalFeed = ({ currentUser }) => {
   };
 
   return (
-    <div className="global-feed">
+    <div className="global-feed" ref={feedRef}>
       {feedItems.length === 0 ? (
         <p className="help-text" style={{ textAlign: 'center', marginTop: '2rem' }}>No blessings yet. Be the first!</p>
       ) : (
-        feedItems.map((item) => {
-          const isBlessed = blessedIds.includes(item.id);
-          return (
-            <article key={item.id} className="feed-card glass-panel">
-              <p className="card-text">"{item.text}"</p>
-              <div className="card-footer">
-                <div className="card-meta">
-                  <span className="author">{item.author}</span>
-                  <span className="dot">•</span>
-                  <span className="date">{formatTimeAgo(item.created_at)}</span>
+        <AnimatePresence initial={false}>
+          {feedItems.map((item) => {
+            const isBlessed = blessedIds.includes(item.id);
+            // Highlight if added within the last 10 seconds and author is current user
+            const isNewlyAddedByMe = item.author === currentUser && (Date.now() - new Date(item.created_at).getTime()) < 10000;
+
+            return (
+              <motion.article 
+                key={item.id} 
+                className={`feed-card glass-panel ${isNewlyAddedByMe ? 'highlight-new' : ''}`}
+                layout
+                initial={{ opacity: 0, y: -30, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ duration: 0.5, type: 'spring', bounce: 0.3 }}
+              >
+                <p className="card-text">"{item.text}"</p>
+                <div className="card-footer">
+                  <div className="card-meta">
+                    <span className="author">{item.author}</span>
+                    <span className="dot">•</span>
+                    <span className="date">{formatTimeAgo(item.created_at)}</span>
+                  </div>
+                  <button 
+                    className={`bless-btn ${isBlessed ? 'active' : ''}`}
+                    onClick={() => handleBless(item.id)}
+                    aria-label={isBlessed ? `You blessed this post. Total blessings: ${item.bless_count || 0}` : `Bless this gratitude post by ${item.author}`}
+                    disabled={isBlessed}
+                  >
+                    <Heart 
+                      size={18} 
+                      className="heart-icon" 
+                      fill={isBlessed ? 'currentColor' : 'none'} 
+                    />
+                    <span className="count">{item.bless_count || 0}</span>
+                  </button>
                 </div>
-                <button 
-                  className={`bless-btn ${isBlessed ? 'active' : ''}`}
-                  onClick={() => handleBless(item.id)}
-                  aria-label={isBlessed ? `You blessed this post. Total blessings: ${item.bless_count || 0}` : `Bless this gratitude post by ${item.author}`}
-                  disabled={isBlessed}
-                >
-                  <Heart 
-                    size={18} 
-                    className="heart-icon" 
-                    fill={isBlessed ? 'currentColor' : 'none'} 
-                  />
-                  <span className="count">{item.bless_count || 0}</span>
-                </button>
-              </div>
-            </article>
-          );
-        })
+              </motion.article>
+            );
+          })}
+        </AnimatePresence>
       )}
     </div>
   );

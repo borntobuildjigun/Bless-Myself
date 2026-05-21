@@ -267,6 +267,17 @@ body {
   background: var(--card-hover-bg);
 }
 
+.feed-card.highlight-new {
+  animation: glowPulse 2.5s ease-out forwards;
+}
+
+@keyframes glowPulse {
+  0% { box-shadow: 0 0 0 0 rgba(163, 201, 168, 0); border-color: var(--glass-border); }
+  15% { box-shadow: 0 0 20px 5px rgba(163, 201, 168, 0.5); border-color: rgba(163, 201, 168, 0.8); background: rgba(163, 201, 168, 0.1); }
+  70% { box-shadow: 0 0 20px 5px rgba(163, 201, 168, 0.5); border-color: rgba(163, 201, 168, 0.8); background: rgba(163, 201, 168, 0.1); }
+  100% { box-shadow: var(--glass-shadow); border-color: var(--glass-border); background: var(--glass-bg); }
+}
+
 .card-text {
   font-size: 1.25rem;
   line-height: 1.5;

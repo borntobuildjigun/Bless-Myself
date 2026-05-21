@@ -1,17 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import GlobalFeed from '../components/GlobalFeed';
 import { Sparkles, Send } from 'lucide-react';
 
 const Home = ({ nickname, onAddBlessing }) => {
   const [text, setText] = useState('');
   const [isFocused, setIsFocused] = useState(false);
+  const feedRef = useRef(null);
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (text.trim()) {
       onAddBlessing(text.trim());
       setText('');
-      // Small visual feedback could be added here
+      
+      // Auto-scroll to feed smoothly
+      if (feedRef.current) {
+        setTimeout(() => {
+          // Adjust scroll position slightly to account for sticky header
+          const yOffset = -80; 
+          const element = feedRef.current;
+          const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+          window.scrollTo({ top: y, behavior: 'smooth' });
+        }, 100);
+      }
     }
   };
 
@@ -63,7 +74,7 @@ const Home = ({ nickname, onAddBlessing }) => {
           <h2>Global Blessings</h2>
           <p>Read what others are grateful for</p>
         </div>
-        <GlobalFeed currentUser={nickname} />
+        <GlobalFeed currentUser={nickname} feedRef={feedRef} />
       </section>
     </main>
   );
