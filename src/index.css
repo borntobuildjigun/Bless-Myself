@@ -324,9 +324,10 @@ body {
 }
 
 .feed-row-container {
-  overflow: hidden;
+  overflow-x: hidden;
   padding: 0.5rem 0;
   cursor: grab;
+  width: 100%;
 }
 
 .feed-row-container:active {
@@ -336,8 +337,8 @@ body {
 .feed-row {
   display: flex;
   gap: 1rem;
-  padding: 0 1.5rem;
   touch-action: pan-y;
+  width: max-content;
 }
 
 /* Gallery Cards */

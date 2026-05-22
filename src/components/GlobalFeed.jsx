@@ -1,23 +1,37 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Heart, ChevronDown } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useMotionValue, useTransform, useAnimationFrame } from 'framer-motion';
 
-const CARDS_PER_ROW = 8;
 const TRUNCATE_LENGTH = 80;
 
-const FeedRow = ({ items, currentUser, blessedIds, onBless, poppingId, rowIndex }) => {
-  const rowRef = useRef(null);
-  const [dragConstraint, setDragConstraint] = useState(0);
+const FeedRow = ({ items, currentUser, blessedIds, onBless, poppingId, direction = 'left' }) => {
+  const containerRef = useRef(null);
   const [expandedIds, setExpandedIds] = useState([]);
+  const [isHovered, setIsHovered] = useState(false);
+  const [isPanning, setIsPanning] = useState(false);
 
-  useEffect(() => {
-    if (rowRef.current) {
-      const containerWidth = rowRef.current.parentElement.offsetWidth;
-      const scrollWidth = rowRef.current.scrollWidth;
-      setDragConstraint(Math.min(0, -(scrollWidth - containerWidth)));
-    }
-  }, [items]);
+  const baseX = useMotionValue(0);
+
+  const wrap = (min, max, v) => {
+    const rangeSize = max - min;
+    return ((((v - min) % rangeSize) + rangeSize) % rangeSize) + min;
+  };
+
+  const x = useTransform(baseX, (v) => {
+    if (!containerRef.current) return `${v}px`;
+    const singleSetWidth = containerRef.current.scrollWidth / 2;
+    if (singleSetWidth === 0) return '0px';
+    return `${wrap(-singleSetWidth, 0, v)}px`;
+  });
+
+  const baseVelocity = direction === 'left' ? -30 : 30;
+
+  useAnimationFrame((t, delta) => {
+    if (isHovered || isPanning) return;
+    let moveBy = baseVelocity * (delta / 1000);
+    baseX.set(baseX.get() + moveBy);
+  });
 
   const formatTimeAgo = (dateString) => {
     const diff = Date.now() - new Date(dateString).getTime();
@@ -30,16 +44,24 @@ const FeedRow = ({ items, currentUser, blessedIds, onBless, poppingId, rowIndex 
   };
 
   return (
-    <div className="feed-row-container">
+    <div 
+      className="feed-row-container infinite"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      onTouchStart={() => setIsHovered(true)}
+      onTouchEnd={() => setIsHovered(false)}
+    >
       <motion.div
-        ref={rowRef}
+        ref={containerRef}
         className="feed-row"
-        drag="x"
-        dragConstraints={{ left: dragConstraint, right: 0 }}
-        dragElastic={0.1}
-        dragTransition={{ bounceStiffness: 300, bounceDamping: 30 }}
+        style={{ x }}
+        onPanStart={() => setIsPanning(true)}
+        onPan={(e, info) => {
+          baseX.set(baseX.get() + info.delta.x);
+        }}
+        onPanEnd={() => setIsPanning(false)}
       >
-        {items.map((item) => {
+        {[...items, ...items].map((item, idx) => {
           const isBlessed = blessedIds.includes(item.id);
           const isNewlyAddedByMe = item.author === currentUser && (Date.now() - new Date(item.created_at).getTime()) < 10000;
           const isLong = item.text.length > TRUNCATE_LENGTH;
@@ -48,7 +70,7 @@ const FeedRow = ({ items, currentUser, blessedIds, onBless, poppingId, rowIndex 
 
           return (
             <motion.article
-              key={item.id}
+              key={`${item.id}-${idx}`}
               className={`gallery-card glass-panel ${isNewlyAddedByMe ? 'highlight-new' : ''} ${isExpanded ? 'expanded' : ''}`}
               layout
               initial={isNewlyAddedByMe ? { opacity: 0, scale: 0.9 } : false}
@@ -200,13 +222,12 @@ const GlobalFeed = ({ currentUser, feedRef, newlyInsertedItem }) => {
     }
   };
 
-  // Group feed items into rows of CARDS_PER_ROW
+  // Divide feed items into exactly 2 rows for zig-zag infinite scroll
   const rows = useMemo(() => {
-    const result = [];
-    for (let i = 0; i < feedItems.length; i += CARDS_PER_ROW) {
-      result.push(feedItems.slice(i, i + CARDS_PER_ROW));
-    }
-    return result;
+    if (feedItems.length === 0) return [];
+    // Ensure we have enough items, or just split whatever we have
+    const mid = Math.ceil(feedItems.length / 2);
+    return [feedItems.slice(0, mid), feedItems.slice(mid)];
   }, [feedItems]);
 
   const renderSkeletons = () => {
@@ -238,17 +259,20 @@ const GlobalFeed = ({ currentUser, feedRef, newlyInsertedItem }) => {
       ) : feedItems.length === 0 ? (
         <p className="help-text" style={{ textAlign: 'center', marginTop: '2rem' }}>No blessings yet. Be the first!</p>
       ) : (
-        rows.map((rowItems, rowIndex) => (
-          <FeedRow
-            key={`row-${rowIndex}-${rowItems[0]?.id}`}
-            items={rowItems}
-            currentUser={currentUser}
-            blessedIds={blessedIds}
-            onBless={handleBless}
-            poppingId={poppingId}
-            rowIndex={rowIndex}
-          />
-        ))
+        rows.map((rowItems, rowIndex) => {
+          if (rowItems.length === 0) return null;
+          return (
+            <FeedRow
+              key={`row-${rowIndex}-${rowItems[0]?.id}`}
+              items={rowItems}
+              currentUser={currentUser}
+              blessedIds={blessedIds}
+              onBless={handleBless}
+              poppingId={poppingId}
+              direction={rowIndex % 2 === 0 ? 'left' : 'right'}
+            />
+          );
+        })
       )}
     </div>
   );
