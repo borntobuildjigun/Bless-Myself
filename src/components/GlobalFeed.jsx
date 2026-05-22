@@ -8,7 +8,6 @@ const TRUNCATE_LENGTH = 80;
 const FeedRow = ({ items, currentUser, blessedIds, onBless, poppingId, direction = 'left' }) => {
   const containerRef = useRef(null);
   const [expandedIds, setExpandedIds] = useState([]);
-  const [isHovered, setIsHovered] = useState(false);
   const [isPanning, setIsPanning] = useState(false);
 
   const baseX = useMotionValue(0);
@@ -28,7 +27,7 @@ const FeedRow = ({ items, currentUser, blessedIds, onBless, poppingId, direction
   const baseVelocity = direction === 'left' ? -30 : 30;
 
   useAnimationFrame((t, delta) => {
-    if (isHovered || isPanning) return;
+    if (isPanning) return;
     let moveBy = baseVelocity * (delta / 1000);
     baseX.set(baseX.get() + moveBy);
   });
@@ -44,13 +43,7 @@ const FeedRow = ({ items, currentUser, blessedIds, onBless, poppingId, direction
   };
 
   return (
-    <div 
-      className="feed-row-container infinite"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      onTouchStart={() => setIsHovered(true)}
-      onTouchEnd={() => setIsHovered(false)}
-    >
+    <div className="feed-row-container infinite">
       <motion.div
         ref={containerRef}
         className="feed-row"
