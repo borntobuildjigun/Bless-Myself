@@ -199,7 +199,7 @@ const GlobalFeed = ({ currentUser, feedRef, newlyInsertedItem }) => {
       .from('blessings')
       .select('*')
       .order('created_at', { ascending: false })
-      .limit(50);
+      .limit(100);
 
     if (error) {
       console.error('Error fetching blessings:', error);
@@ -232,12 +232,23 @@ const GlobalFeed = ({ currentUser, feedRef, newlyInsertedItem }) => {
     }
   };
 
-  // Divide feed items into exactly 2 rows for zig-zag infinite scroll
+  // Divide feed items dynamically to create 3, 4, 5... rows downwards as data grows
+  // ensuring each row has enough items (min 12) to safely cover the screen width for seamless looping
   const rows = useMemo(() => {
     if (feedItems.length === 0) return [];
-    // Ensure we have enough items, or just split whatever we have
-    const mid = Math.ceil(feedItems.length / 2);
-    return [feedItems.slice(0, mid), feedItems.slice(mid)];
+    
+    const MIN_ITEMS_PER_ROW = 12;
+    let numRows = Math.floor(feedItems.length / MIN_ITEMS_PER_ROW);
+    if (numRows === 0) numRows = 1; // At least 1 row if very few items
+    
+    const result = [];
+    const itemsPerRow = Math.ceil(feedItems.length / numRows);
+    
+    for (let i = 0; i < numRows; i++) {
+      result.push(feedItems.slice(i * itemsPerRow, (i + 1) * itemsPerRow));
+    }
+    
+    return result;
   }, [feedItems]);
 
   const renderSkeletons = () => {
