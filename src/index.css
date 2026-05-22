@@ -227,17 +227,83 @@ body {
   font-weight: 500;
 }
 
+/* Speech Bubble Prompt */
+.speech-bubble-wrapper {
+  width: 100%;
+  max-width: 480px;
+  margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: fadeUp 0.6s ease-out 0.15s both;
+}
+
+.speech-bubble {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(163, 201, 168, 0.12), rgba(163, 201, 168, 0.04));
+  border: 1px solid rgba(163, 201, 168, 0.25);
+  width: 100%;
+}
+
+.bubble-text {
+  flex: 1;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  line-height: 1.5;
+  font-weight: 400;
+}
+
+.bubble-refresh {
+  flex-shrink: 0;
+  background: rgba(163, 201, 168, 0.15);
+  border: 1px solid rgba(163, 201, 168, 0.3);
+  color: #72A478;
+  cursor: pointer;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+}
+
+.bubble-refresh:hover {
+  background: rgba(163, 201, 168, 0.3);
+  transform: rotate(90deg);
+}
+
+.bubble-tail {
+  width: 12px;
+  height: 12px;
+  background: linear-gradient(135deg, rgba(163, 201, 168, 0.12), rgba(163, 201, 168, 0.04));
+  border-right: 1px solid rgba(163, 201, 168, 0.25);
+  border-bottom: 1px solid rgba(163, 201, 168, 0.25);
+  transform: rotate(45deg);
+  margin-top: -7px;
+}
+
 /* Feed Section */
 .feed-section {
-  padding: 4rem 2rem;
-  max-width: 800px;
-  margin: 0 auto;
+  padding: 3rem 0 4rem;
   width: 100%;
 }
 
 .feed-header {
   text-align: center;
-  margin-bottom: 3rem;
+  margin-bottom: 2rem;
+  padding: 0 2rem;
+}
+
+.feed-header h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
 }
 
 .feed-header h3 {
@@ -250,24 +316,48 @@ body {
   color: var(--text-secondary);
 }
 
+/* Horizontal Gallery Feed */
 .global-feed {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 2rem;
 }
 
-.feed-card {
-  padding: 1.5rem;
-  transition: transform var(--transition-normal), background var(--transition-normal);
-  animation: fadeIn 0.8s ease-out;
+.feed-row-container {
+  overflow: hidden;
+  padding: 0.5rem 0;
+  cursor: grab;
 }
 
-.feed-card:hover {
-  transform: translateY(-4px);
+.feed-row-container:active {
+  cursor: grabbing;
+}
+
+.feed-row {
+  display: flex;
+  gap: 1rem;
+  padding: 0 1.5rem;
+  touch-action: pan-y;
+}
+
+/* Gallery Cards */
+.gallery-card {
+  flex-shrink: 0;
+  width: calc(43vw - 1rem);
+  min-height: 180px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  transition: background var(--transition-normal);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.gallery-card:hover {
   background: var(--card-hover-bg);
 }
 
-.feed-card.highlight-new {
+.gallery-card.highlight-new {
   animation: glowPulse 2.5s ease-out forwards;
 }
 
@@ -278,25 +368,31 @@ body {
   100% { box-shadow: var(--glass-shadow); border-color: var(--glass-border); background: var(--glass-bg); }
 }
 
-.card-text {
-  font-size: 1.25rem;
-  line-height: 1.5;
-  margin-bottom: 1.5rem;
-  font-weight: 400; /* slightly heavier for light bg */
+.gallery-card-text {
+  font-size: 1rem;
+  line-height: 1.6;
+  margin-bottom: auto;
+  padding-bottom: 1rem;
+  font-weight: 400;
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 
-.card-footer {
+.gallery-card-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-top: auto;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.04);
 }
 
 .card-meta {
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   color: var(--text-secondary);
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.35rem;
 }
 
 .author {
@@ -305,22 +401,24 @@ body {
 }
 
 .dot {
-  font-size: 0.5rem;
+  font-size: 0.4rem;
 }
 
 .bless-btn {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.35rem;
   background: rgba(0, 0, 0, 0.02);
   border: 1px solid rgba(0, 0, 0, 0.05);
-  padding: 0.5rem 1rem;
+  padding: 0.4rem 0.75rem;
   border-radius: 999px;
   color: var(--text-secondary);
   cursor: pointer;
   transition: all var(--transition-fast);
   font-family: inherit;
   font-weight: 500;
+  font-size: 0.8rem;
+  position: relative;
 }
 
 .bless-btn:hover {
@@ -783,8 +881,27 @@ body {
     font-size: 1rem;
   }
   
-  .feed-section, .archive-page {
+  .feed-section {
+    padding: 2rem 0;
+  }
+  
+  .archive-page {
     padding: 2rem 1rem;
+  }
+
+  .gallery-card {
+    width: calc(75vw - 1rem);
+    min-height: 160px;
+  }
+  
+  .feed-row {
+    padding: 0 1rem;
+    gap: 0.75rem;
+  }
+  
+  .speech-bubble-wrapper {
+    max-width: 100%;
+    padding: 0 0.5rem;
   }
   
   .timeline-item {
@@ -797,5 +914,23 @@ body {
   
   .timeline-marker {
     left: 7px;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+  .gallery-card {
+    width: calc(38vw - 1rem);
+  }
+}
+
+@media (min-width: 1025px) {
+  .gallery-card {
+    width: 280px;
+    min-height: 200px;
+  }
+  
+  .feed-section {
+    max-width: 1200px;
+    margin: 0 auto;
   }
 }
