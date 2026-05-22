@@ -372,10 +372,43 @@ body {
   font-size: 1rem;
   line-height: 1.6;
   margin-bottom: auto;
-  padding-bottom: 1rem;
+  padding-bottom: 0.5rem;
   font-weight: 400;
   word-break: keep-all;
   overflow-wrap: break-word;
+}
+
+/* Expand / Collapse Button */
+.expand-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: none;
+  border: none;
+  color: var(--accent-color);
+  font-size: 0.8rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 0.25rem 0;
+  margin-bottom: 0.5rem;
+  transition: all var(--transition-fast);
+}
+
+.expand-btn:hover {
+  color: var(--accent-hover);
+}
+
+.expand-btn svg {
+  transition: transform var(--transition-fast);
+}
+
+.expand-btn.expanded svg {
+  transform: rotate(180deg);
+}
+
+.gallery-card.expanded {
+  min-height: auto;
 }
 
 .gallery-card-footer {

@@ -1,13 +1,15 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Heart } from 'lucide-react';
+import { Heart, ChevronDown } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const CARDS_PER_ROW = 8;
+const TRUNCATE_LENGTH = 80;
 
 const FeedRow = ({ items, currentUser, blessedIds, onBless, poppingId, rowIndex }) => {
   const rowRef = useRef(null);
   const [dragConstraint, setDragConstraint] = useState(0);
+  const [expandedIds, setExpandedIds] = useState([]);
 
   useEffect(() => {
     if (rowRef.current) {
@@ -40,16 +42,36 @@ const FeedRow = ({ items, currentUser, blessedIds, onBless, poppingId, rowIndex 
         {items.map((item) => {
           const isBlessed = blessedIds.includes(item.id);
           const isNewlyAddedByMe = item.author === currentUser && (Date.now() - new Date(item.created_at).getTime()) < 10000;
+          const isLong = item.text.length > TRUNCATE_LENGTH;
+          const isExpanded = expandedIds.includes(item.id);
+          const displayText = isLong && !isExpanded ? item.text.slice(0, TRUNCATE_LENGTH) + '...' : item.text;
 
           return (
             <motion.article
               key={item.id}
-              className={`gallery-card glass-panel ${isNewlyAddedByMe ? 'highlight-new' : ''}`}
+              className={`gallery-card glass-panel ${isNewlyAddedByMe ? 'highlight-new' : ''} ${isExpanded ? 'expanded' : ''}`}
+              layout
               initial={isNewlyAddedByMe ? { opacity: 0, scale: 0.9 } : false}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.4, type: 'spring', bounce: 0.3 }}
             >
-              <p className="gallery-card-text">"{item.text}"</p>
+              <p className="gallery-card-text">"{displayText}"</p>
+              {isLong && (
+                <button
+                  className={`expand-btn ${isExpanded ? 'expanded' : ''}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setExpandedIds(prev =>
+                      prev.includes(item.id)
+                        ? prev.filter(id => id !== item.id)
+                        : [...prev, item.id]
+                    );
+                  }}
+                >
+                  <span>{isExpanded ? '접기' : '더보기'}</span>
+                  <ChevronDown size={14} />
+                </button>
+              )}
               <div className="gallery-card-footer">
                 <div className="card-meta">
                   <span className="author">{item.author}</span>

@@ -101,7 +101,7 @@ const Home = ({ nickname, onAddBlessing }) => {
                 onFocus={() => setIsFocused(true)}
                 onBlur={() => setIsFocused(false)}
                 placeholder="Write a small blessing or gratitude..."
-                maxLength={100}
+                maxLength={200}
                 autoComplete="off"
                 aria-label="Write a small blessing or gratitude"
                 disabled={isSubmitting}
