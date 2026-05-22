@@ -6,6 +6,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 const GlobalFeed = ({ currentUser, feedRef, newlyInsertedItem }) => {
   const [feedItems, setFeedItems] = useState([]);
   const [blessedIds, setBlessedIds] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [poppingId, setPoppingId] = useState(null);
   
   useEffect(() => {
     if (newlyInsertedItem) {
@@ -54,6 +56,7 @@ const GlobalFeed = ({ currentUser, feedRef, newlyInsertedItem }) => {
   }, []);
 
   const fetchBlessings = async () => {
+    setIsLoading(true);
     const { data, error } = await supabase
       .from('blessings')
       .select('*')
@@ -65,25 +68,37 @@ const GlobalFeed = ({ currentUser, feedRef, newlyInsertedItem }) => {
     } else {
       setFeedItems(data || []);
     }
+    setIsLoading(false);
   };
 
   const handleBless = async (id) => {
     if (blessedIds.includes(id)) return; // Prevent multiple blessings locally
+
+    // Trigger confetti animation
+    setPoppingId(id);
+    setTimeout(() => setPoppingId(null), 600);
 
     // Optimistic UI update
     const newBlessedIds = [...blessedIds, id];
     setBlessedIds(newBlessedIds);
     localStorage.setItem('blessed_ids', JSON.stringify(newBlessedIds));
 
-    setFeedItems(items => items.map(item => {
+    setFeedItems(prevItems => prevItems.map(item => {
       if (item.id === id) {
         return { ...item, bless_count: (item.bless_count || 0) + 1 };
       }
       return item;
     }));
 
-    // Call Supabase RPC to increment in DB safely
-    const { error } = await supabase.rpc('increment_bless_count', { row_id: id });
+    // Update Supabase directly instead of RPC to ensure it saves without backend config
+    const currentItem = feedItems.find(i => i.id === id);
+    const newCount = (currentItem ? currentItem.bless_count || 0 : 0) + 1;
+    
+    const { error } = await supabase
+      .from('blessings')
+      .update({ bless_count: newCount })
+      .eq('id', id);
+      
     if (error) {
       console.error('Error incrementing bless count:', error);
     }
@@ -100,9 +115,26 @@ const GlobalFeed = ({ currentUser, feedRef, newlyInsertedItem }) => {
     return `${Math.floor(hours / 24)} days ago`;
   };
 
+  const renderSkeletons = () => {
+    return Array.from({ length: 4 }).map((_, i) => (
+      <article key={`skeleton-${i}`} className="feed-card glass-panel skeleton-card">
+        <div className="skeleton-text"></div>
+        <div className="skeleton-text short"></div>
+        <div className="card-footer" style={{ marginTop: '1.5rem' }}>
+          <div className="card-meta">
+            <div className="skeleton-author"></div>
+          </div>
+          <div className="skeleton-btn"></div>
+        </div>
+      </article>
+    ));
+  };
+
   return (
     <div className="global-feed" ref={feedRef}>
-      {feedItems.length === 0 ? (
+      {isLoading ? (
+        renderSkeletons()
+      ) : feedItems.length === 0 ? (
         <p className="help-text" style={{ textAlign: 'center', marginTop: '2rem' }}>No blessings yet. Be the first!</p>
       ) : (
         <AnimatePresence initial={false}>
@@ -140,6 +172,18 @@ const GlobalFeed = ({ currentUser, feedRef, newlyInsertedItem }) => {
                       fill={isBlessed ? 'currentColor' : 'none'} 
                     />
                     <span className="count">{item.bless_count || 0}</span>
+                    
+                    {poppingId === item.id && (
+                      <div className="confetti-container">
+                        {Array.from({ length: 6 }).map((_, i) => {
+                          const angle = (i * 60) * (Math.PI / 180);
+                          const distance = 35;
+                          const tx = `${Math.cos(angle) * distance}px`;
+                          const ty = `${Math.sin(angle) * distance}px`;
+                          return <div key={i} className="confetti-particle" style={{ '--tx': tx, '--ty': ty }}></div>
+                        })}
+                      </div>
+                    )}
                   </button>
                 </div>
               </motion.article>
