@@ -90,14 +90,8 @@ const GlobalFeed = ({ currentUser, feedRef, newlyInsertedItem }) => {
       return item;
     }));
 
-    // Update Supabase directly instead of RPC to ensure it saves without backend config
-    const currentItem = feedItems.find(i => i.id === id);
-    const newCount = (currentItem ? currentItem.bless_count || 0 : 0) + 1;
-    
-    const { error } = await supabase
-      .from('blessings')
-      .update({ bless_count: newCount })
-      .eq('id', id);
+    // Use Supabase RPC function (SECURITY DEFINER) to safely increment bless_count
+    const { error } = await supabase.rpc('increment_bless_count', { row_id: id });
       
     if (error) {
       console.error('Error incrementing bless count:', error);
