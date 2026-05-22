@@ -9,8 +9,27 @@ const FeedRow = ({ items, currentUser, blessedIds, onBless, poppingId, direction
   const containerRef = useRef(null);
   const [expandedIds, setExpandedIds] = useState([]);
   const [isPanning, setIsPanning] = useState(false);
+  const [singleSetWidth, setSingleSetWidth] = useState(0);
 
   const baseX = useMotionValue(0);
+
+  useEffect(() => {
+    // Measure the exact distance between the first item and its duplicate to ensure pixel-perfect seamless loop.
+    // Done only once on mount/resize to prevent layout thrashing.
+    if (!containerRef.current) return;
+    const children = containerRef.current.children;
+    if (children.length > items.length) {
+      const firstChild = children[0];
+      const middleChild = children[items.length];
+      const distance = middleChild.offsetLeft - firstChild.offsetLeft;
+      setSingleSetWidth(distance);
+      
+      // If moving right, start at the negative offset so it has room to move towards 0 immediately
+      if (direction === 'right') {
+        baseX.set(-distance);
+      }
+    }
+  }, [items, direction, baseX]);
 
   const wrap = (min, max, v) => {
     const rangeSize = max - min;
@@ -18,9 +37,7 @@ const FeedRow = ({ items, currentUser, blessedIds, onBless, poppingId, direction
   };
 
   const x = useTransform(baseX, (v) => {
-    if (!containerRef.current) return `${v}px`;
-    const singleSetWidth = containerRef.current.scrollWidth / 2;
-    if (singleSetWidth === 0) return '0px';
+    if (singleSetWidth === 0) return `${v}px`;
     return `${wrap(-singleSetWidth, 0, v)}px`;
   });
 
