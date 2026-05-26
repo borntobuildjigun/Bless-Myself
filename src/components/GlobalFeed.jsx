@@ -1,21 +1,18 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Heart, ChevronDown } from 'lucide-react';
+import { Heart, ChevronDown, Bookmark } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { motion, AnimatePresence, useMotionValue, useTransform, useAnimationFrame } from 'framer-motion';
 
 const TRUNCATE_LENGTH = 80;
 
-const FeedRow = ({ items, currentUser, blessedIds, onBless, poppingId, direction = 'left' }) => {
+const FeedRow = ({ items, currentUser, blessedIds, onBless, poppingId, direction = 'left', savedIds, onSave }) => {
   const containerRef = useRef(null);
   const [expandedIds, setExpandedIds] = useState([]);
-  const isPanningRef = useRef(false);
   const [singleSetWidth, setSingleSetWidth] = useState(0);
 
   const baseX = useMotionValue(0);
 
   useEffect(() => {
-    // Measure the exact distance between the first item and its duplicate to ensure pixel-perfect seamless loop.
-    // Done only once on mount/resize to prevent layout thrashing.
     if (!containerRef.current) return;
     const children = containerRef.current.children;
     if (children.length > items.length) {
@@ -23,8 +20,7 @@ const FeedRow = ({ items, currentUser, blessedIds, onBless, poppingId, direction
       const middleChild = children[items.length];
       const distance = middleChild.offsetLeft - firstChild.offsetLeft;
       setSingleSetWidth(distance);
-      
-      // If moving right, start at the negative offset so it has room to move towards 0 immediately
+
       if (direction === 'right') {
         baseX.set(-distance);
       }
@@ -44,7 +40,6 @@ const FeedRow = ({ items, currentUser, blessedIds, onBless, poppingId, direction
   const baseVelocity = direction === 'left' ? -30 : 30;
 
   useAnimationFrame((t, delta) => {
-    if (isPanningRef.current) return;
     let moveBy = baseVelocity * (delta / 1000);
     baseX.set(baseX.get() + moveBy);
   });
@@ -65,14 +60,10 @@ const FeedRow = ({ items, currentUser, blessedIds, onBless, poppingId, direction
         ref={containerRef}
         className="feed-row"
         style={{ x }}
-        onPanStart={() => { isPanningRef.current = true; }}
-        onPan={(e, info) => {
-          baseX.set(baseX.get() + info.delta.x);
-        }}
-        onPanEnd={() => { isPanningRef.current = false; }}
       >
         {[...items, ...items].map((item, idx) => {
           const isBlessed = blessedIds.includes(item.id);
+          const isSaved = savedIds.includes(item.id);
           const isNewlyAddedByMe = item.author === currentUser && (Date.now() - new Date(item.created_at).getTime()) < 10000;
           const isLong = item.text.length > TRUNCATE_LENGTH;
           const isExpanded = expandedIds.includes(item.id);
@@ -110,31 +101,43 @@ const FeedRow = ({ items, currentUser, blessedIds, onBless, poppingId, direction
                   <span className="dot">•</span>
                   <span className="date">{formatTimeAgo(item.created_at)}</span>
                 </div>
-                <button
-                  className={`bless-btn ${isBlessed ? 'active' : ''}`}
-                  onClick={(e) => { e.stopPropagation(); onBless(item.id); }}
-                  aria-label={isBlessed ? `Blessed (${item.bless_count || 0})` : `Bless this post`}
-                  disabled={isBlessed}
-                >
-                  <Heart
-                    size={16}
-                    className="heart-icon"
-                    fill={isBlessed ? 'currentColor' : 'none'}
-                  />
-                  <span className="count">{item.bless_count || 0}</span>
+                <div className="card-actions">
+                  <button
+                    className={`save-btn ${isSaved ? 'active' : ''}`}
+                    onClick={(e) => { e.stopPropagation(); onSave(item); }}
+                    aria-label={isSaved ? '저장됨' : '저장하기'}
+                  >
+                    <Bookmark
+                      size={14}
+                      fill={isSaved ? 'currentColor' : 'none'}
+                    />
+                  </button>
+                  <button
+                    className={`bless-btn ${isBlessed ? 'active' : ''}`}
+                    onClick={(e) => { e.stopPropagation(); onBless(item.id); }}
+                    aria-label={isBlessed ? `Blessed (${item.bless_count || 0})` : `Bless this post`}
+                    disabled={isBlessed}
+                  >
+                    <Heart
+                      size={14}
+                      className="heart-icon"
+                      fill={isBlessed ? 'currentColor' : 'none'}
+                    />
+                    <span className="count">{item.bless_count || 0}</span>
 
-                  {poppingId === item.id && (
-                    <div className="confetti-container">
-                      {Array.from({ length: 6 }).map((_, i) => {
-                        const angle = (i * 60) * (Math.PI / 180);
-                        const distance = 30;
-                        const tx = `${Math.cos(angle) * distance}px`;
-                        const ty = `${Math.sin(angle) * distance}px`;
-                        return <div key={i} className="confetti-particle" style={{ '--tx': tx, '--ty': ty }}></div>;
-                      })}
-                    </div>
-                  )}
-                </button>
+                    {poppingId === item.id && (
+                      <div className="confetti-container">
+                        {Array.from({ length: 6 }).map((_, i) => {
+                          const angle = (i * 60) * (Math.PI / 180);
+                          const distance = 30;
+                          const tx = `${Math.cos(angle) * distance}px`;
+                          const ty = `${Math.sin(angle) * distance}px`;
+                          return <div key={i} className="confetti-particle" style={{ '--tx': tx, '--ty': ty }}></div>;
+                        })}
+                      </div>
+                    )}
+                  </button>
+                </div>
               </div>
             </motion.article>
           );
@@ -147,6 +150,7 @@ const FeedRow = ({ items, currentUser, blessedIds, onBless, poppingId, direction
 const GlobalFeed = ({ currentUser, feedRef, newlyInsertedItem }) => {
   const [feedItems, setFeedItems] = useState([]);
   const [blessedIds, setBlessedIds] = useState([]);
+  const [savedIds, setSavedIds] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [poppingId, setPoppingId] = useState(null);
 
@@ -162,6 +166,9 @@ const GlobalFeed = ({ currentUser, feedRef, newlyInsertedItem }) => {
   useEffect(() => {
     const stored = localStorage.getItem('blessed_ids');
     if (stored) setBlessedIds(JSON.parse(stored));
+
+    const storedSaved = localStorage.getItem('saved_ids');
+    if (storedSaved) setSavedIds(JSON.parse(storedSaved));
 
     fetchBlessings();
 
@@ -232,22 +239,53 @@ const GlobalFeed = ({ currentUser, feedRef, newlyInsertedItem }) => {
     }
   };
 
+  const handleSave = (item) => {
+    setSavedIds(prev => {
+      const isAlreadySaved = prev.includes(item.id);
+      let newSavedIds;
+
+      if (isAlreadySaved) {
+        // Unsave: remove from savedIds and saved_items
+        newSavedIds = prev.filter(id => id !== item.id);
+        const storedItems = JSON.parse(localStorage.getItem('saved_items') || '[]');
+        const updatedItems = storedItems.filter(i => i.id !== item.id);
+        localStorage.setItem('saved_items', JSON.stringify(updatedItems));
+      } else {
+        // Save: add to savedIds and saved_items
+        newSavedIds = [...prev, item.id];
+        const storedItems = JSON.parse(localStorage.getItem('saved_items') || '[]');
+        if (!storedItems.some(i => i.id === item.id)) {
+          storedItems.unshift({
+            id: item.id,
+            text: item.text,
+            author: item.author,
+            date: item.created_at
+          });
+        }
+        localStorage.setItem('saved_items', JSON.stringify(storedItems));
+      }
+
+      localStorage.setItem('saved_ids', JSON.stringify(newSavedIds));
+      return newSavedIds;
+    });
+  };
+
   // Divide feed items dynamically to create 3, 4, 5... rows downwards as data grows
   // ensuring each row has enough items (min 12) to safely cover the screen width for seamless looping
   const rows = useMemo(() => {
     if (feedItems.length === 0) return [];
-    
+
     const MIN_ITEMS_PER_ROW = 12;
     let numRows = Math.floor(feedItems.length / MIN_ITEMS_PER_ROW);
     if (numRows === 0) numRows = 1; // At least 1 row if very few items
-    
+
     const result = [];
     const itemsPerRow = Math.ceil(feedItems.length / numRows);
-    
+
     for (let i = 0; i < numRows; i++) {
       result.push(feedItems.slice(i * itemsPerRow, (i + 1) * itemsPerRow));
     }
-    
+
     return result;
   }, [feedItems]);
 
@@ -291,6 +329,8 @@ const GlobalFeed = ({ currentUser, feedRef, newlyInsertedItem }) => {
               onBless={handleBless}
               poppingId={poppingId}
               direction={rowIndex % 2 === 0 ? 'left' : 'right'}
+              savedIds={savedIds}
+              onSave={handleSave}
             />
           );
         })

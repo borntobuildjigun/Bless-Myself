@@ -471,6 +471,38 @@ body {
   animation: pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
+/* Card Actions Container */
+.card-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* Save / Bookmark Button */
+.save-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.02);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  padding: 0.35rem;
+  border-radius: 50%;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.save-btn:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--text-primary);
+}
+
+.save-btn.active {
+  background: rgba(59, 130, 246, 0.08);
+  border-color: rgba(59, 130, 246, 0.2);
+  color: #3b82f6;
+}
+
 /* Archive Page */
 .archive-page {
   max-width: 800px;
@@ -480,7 +512,7 @@ body {
 }
 
 .archive-header {
-  margin-bottom: 4rem;
+  margin-bottom: 2rem;
   text-align: center;
 }
 
@@ -491,6 +523,91 @@ body {
 
 .archive-header p {
   color: var(--text-secondary);
+}
+
+/* Archive Tabs */
+.archive-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+  background: rgba(0, 0, 0, 0.03);
+  border-radius: 12px;
+  padding: 0.25rem;
+}
+
+.archive-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.65rem 1rem;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.archive-tab:hover {
+  color: var(--text-primary);
+}
+
+.archive-tab.active {
+  background: var(--bg-color);
+  color: var(--text-primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* Saved Items List */
+.saved-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.saved-item {
+  padding: 1.25rem;
+  transition: transform var(--transition-normal);
+}
+
+.saved-item:hover {
+  transform: translateY(-2px);
+}
+
+.saved-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.unsave-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 50%;
+  transition: all var(--transition-fast);
+}
+
+.unsave-btn:hover {
+  color: #f43f5e;
+  background: rgba(244, 63, 94, 0.08);
+}
+
+.saved-item-text {
+  font-size: 1.05rem;
+  line-height: 1.6;
+  color: var(--text-primary);
 }
 
 .empty-state {

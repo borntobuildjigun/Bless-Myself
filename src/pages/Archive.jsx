@@ -1,6 +1,24 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { Bookmark, X } from 'lucide-react';
 
 const Archive = ({ myBlessings, totalXp = 0, currentStreak = 0 }) => {
+  const [activeTab, setActiveTab] = useState('my');
+  const [savedItems, setSavedItems] = useState([]);
+
+  useEffect(() => {
+    const stored = JSON.parse(localStorage.getItem('saved_items') || '[]');
+    setSavedItems(stored);
+  }, []);
+
+  const handleUnsave = (id) => {
+    const updated = savedItems.filter(item => item.id !== id);
+    setSavedItems(updated);
+    localStorage.setItem('saved_items', JSON.stringify(updated));
+
+    const savedIds = JSON.parse(localStorage.getItem('saved_ids') || '[]');
+    localStorage.setItem('saved_ids', JSON.stringify(savedIds.filter(sid => sid !== id)));
+  };
+
   const getTreeEmoji = (xp) => {
     if (xp < 20) return '🌱';
     if (xp < 50) return '🌿';
@@ -28,6 +46,20 @@ const Archive = ({ myBlessings, totalXp = 0, currentStreak = 0 }) => {
   const nextXp = getNextLevelXp(totalXp);
   const progressPercent = totalXp >= 200 ? 100 : (totalXp / nextXp) * 100;
 
+  const formatDate = (dateString) => {
+    const dateObj = new Date(dateString);
+    const date = dateObj.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+    const time = dateObj.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    return { date, time };
+  };
+
   return (
     <main className="archive-page">
       <header className="archive-header">
@@ -51,41 +83,84 @@ const Archive = ({ myBlessings, totalXp = 0, currentStreak = 0 }) => {
         )}
       </section>
 
-      <section className="timeline-container" aria-label="Timeline of your blessings">
-        {myBlessings.length === 0 ? (
-          <div className="empty-state">
-            <p>Your archive is empty.</p>
-            <p className="empty-subtext">Start sharing small blessings on the home page to build your happiness database.</p>
-          </div>
-        ) : (
-          <ol className="timeline">
-            {myBlessings.map((item) => {
-              const dateObj = new Date(item.date);
-              const formattedDate = dateObj.toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                year: 'numeric'
-              });
-              const formattedTime = dateObj.toLocaleTimeString('en-US', {
-                hour: '2-digit',
-                minute: '2-digit'
-              });
+      {/* Tab Switcher */}
+      <div className="archive-tabs">
+        <button
+          className={`archive-tab ${activeTab === 'my' ? 'active' : ''}`}
+          onClick={() => setActiveTab('my')}
+        >
+          내가 쓴 글 ({myBlessings.length})
+        </button>
+        <button
+          className={`archive-tab ${activeTab === 'saved' ? 'active' : ''}`}
+          onClick={() => setActiveTab('saved')}
+        >
+          <Bookmark size={14} />
+          저장한 글 ({savedItems.length})
+        </button>
+      </div>
 
-              return (
-                <li key={item.id} className="timeline-item">
-                  <div className="timeline-marker"></div>
-                  <article className="timeline-content glass-panel">
-                    <div className="timeline-date">
-                      {formattedDate} <span className="time-subtext">{formattedTime}</span>
+      {/* My Blessings Tab */}
+      {activeTab === 'my' && (
+        <section className="timeline-container" aria-label="Timeline of your blessings">
+          {myBlessings.length === 0 ? (
+            <div className="empty-state">
+              <p>Your archive is empty.</p>
+              <p className="empty-subtext">Start sharing small blessings on the home page to build your happiness database.</p>
+            </div>
+          ) : (
+            <ol className="timeline">
+              {myBlessings.map((item) => {
+                const { date, time } = formatDate(item.date);
+                return (
+                  <li key={item.id} className="timeline-item">
+                    <div className="timeline-marker"></div>
+                    <article className="timeline-content glass-panel">
+                      <div className="timeline-date">
+                        {date} <span className="time-subtext">{time}</span>
+                      </div>
+                      <p className="timeline-text">"{item.text}"</p>
+                    </article>
+                  </li>
+                );
+              })}
+            </ol>
+          )}
+        </section>
+      )}
+
+      {/* Saved Items Tab */}
+      {activeTab === 'saved' && (
+        <section className="saved-container" aria-label="Saved blessings from others">
+          {savedItems.length === 0 ? (
+            <div className="empty-state">
+              <p>저장한 글이 없습니다.</p>
+              <p className="empty-subtext">홈 피드에서 마음에 드는 글의 북마크 아이콘을 눌러 저장해 보세요.</p>
+            </div>
+          ) : (
+            <ul className="saved-list">
+              {savedItems.map((item) => {
+                const { date, time } = formatDate(item.date);
+                return (
+                  <li key={item.id} className="saved-item glass-panel">
+                    <div className="saved-item-header">
+                      <div className="card-meta">
+                        <span className="author">{item.author}</span>
+                        <span className="dot">•</span>
+                        <span className="date">{date} {time}</span>
+                      </div>
+                      <button className="unsave-btn" onClick={() => handleUnsave(item.id)} aria-label="저장 해제">
+                        <X size={14} />
+                      </button>
                     </div>
-                    <p className="timeline-text">"{item.text}"</p>
-                  </article>
-                </li>
-              );
-            })}
-          </ol>
-        )}
-      </section>
+                    <p className="saved-item-text">"{item.text}"</p>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+      )}
     </main>
   );
 };
