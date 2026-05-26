@@ -11,7 +11,11 @@ const FeedCard = React.memo(({ item, isBlessed, isSaved, isNewlyAddedByMe, onBle
   const displayText = isLong && !isExpanded ? item.text.slice(0, TRUNCATE_LENGTH) + '...' : item.text;
 
   const formatTimeAgo = (dateString) => {
-    const diff = Date.now() - new Date(dateString).getTime();
+    let dateObj = new Date(dateString);
+    if (isNaN(dateObj.getTime())) {
+      dateObj = new Date(); // Fallback to current time if invalid
+    }
+    const diff = Date.now() - dateObj.getTime();
     const minutes = Math.floor(diff / 60000);
     if (minutes < 1) return 'Just now';
     if (minutes < 60) return `${minutes}m ago`;

@@ -47,7 +47,10 @@ const Archive = ({ myBlessings, totalXp = 0, currentStreak = 0 }) => {
   const progressPercent = totalXp >= 200 ? 100 : (totalXp / nextXp) * 100;
 
   const formatDate = (dateString) => {
-    const dateObj = new Date(dateString);
+    let dateObj = new Date(dateString);
+    if (isNaN(dateObj.getTime())) {
+      dateObj = new Date(); // Fallback to current time if invalid
+    }
     const date = dateObj.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
