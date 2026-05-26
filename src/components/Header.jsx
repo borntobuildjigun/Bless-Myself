@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Settings, Leaf, Home } from 'lucide-react';
+import { Globe, Leaf, Home } from 'lucide-react';
 
 const Header = ({ onOpenSettings }) => {
   const location = useLocation();
@@ -23,8 +23,8 @@ const Header = ({ onOpenSettings }) => {
         <h1 className="logo-text">Bless Myself</h1>
       </div>
       <div className="header-right">
-        <button className="icon-btn" onClick={onOpenSettings} aria-label="Settings">
-          <Settings size={24} />
+        <button className="icon-btn" onClick={onOpenSettings} aria-label="Global / Settings">
+          <Globe size={24} />
         </button>
       </div>
     </header>
