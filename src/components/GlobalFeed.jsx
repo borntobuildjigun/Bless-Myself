@@ -73,7 +73,6 @@ const FeedRow = ({ items, currentUser, blessedIds, onBless, poppingId, direction
             <motion.article
               key={`${item.id}-${idx}`}
               className={`gallery-card glass-panel ${isNewlyAddedByMe ? 'highlight-new' : ''} ${isExpanded ? 'expanded' : ''}`}
-              layout
               initial={isNewlyAddedByMe ? { opacity: 0, scale: 0.9 } : false}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.4, type: 'spring', bounce: 0.3 }}
