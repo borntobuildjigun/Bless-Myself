@@ -5,9 +5,93 @@ import { motion, AnimatePresence, useMotionValue, useTransform, useAnimationFram
 
 const TRUNCATE_LENGTH = 80;
 
+const FeedCard = React.memo(({ item, isBlessed, isSaved, isNewlyAddedByMe, onBless, onSave, poppingId }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const isLong = item.text.length > TRUNCATE_LENGTH;
+  const displayText = isLong && !isExpanded ? item.text.slice(0, TRUNCATE_LENGTH) + '...' : item.text;
+
+  const formatTimeAgo = (dateString) => {
+    const diff = Date.now() - new Date(dateString).getTime();
+    const minutes = Math.floor(diff / 60000);
+    if (minutes < 1) return 'Just now';
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    return `${Math.floor(hours / 24)}d ago`;
+  };
+
+  return (
+    <motion.article
+      className={`gallery-card glass-panel ${isNewlyAddedByMe ? 'highlight-new' : ''} ${isExpanded ? 'expanded' : ''}`}
+      initial={isNewlyAddedByMe ? { opacity: 0, scale: 0.9 } : false}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.4, type: 'spring', bounce: 0.3 }}
+    >
+      <p className="gallery-card-text">"{displayText}"</p>
+      {isLong && (
+        <button
+          className={`expand-btn ${isExpanded ? 'expanded' : ''}`}
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsExpanded(!isExpanded);
+          }}
+        >
+          <span>{isExpanded ? '접기' : '더보기'}</span>
+          <ChevronDown size={14} />
+        </button>
+      )}
+      <div className="gallery-card-footer">
+        <div className="card-meta">
+          <span className="author">{item.author}</span>
+          <span className="dot">•</span>
+          <span className="date">{formatTimeAgo(item.created_at)}</span>
+        </div>
+        <div className="card-actions">
+          <button
+            className={`save-btn ${isSaved ? 'active' : ''}`}
+            onClick={(e) => { e.stopPropagation(); onSave(item); }}
+            aria-label={isSaved ? '저장됨' : '저장하기'}
+          >
+            <Bookmark size={14} fill={isSaved ? 'currentColor' : 'none'} />
+          </button>
+          <button
+            className={`bless-btn ${isBlessed ? 'active' : ''}`}
+            onClick={(e) => { e.stopPropagation(); onBless(item.id); }}
+            aria-label={isBlessed ? `Blessed (${item.bless_count || 0})` : `Bless this post`}
+            disabled={isBlessed}
+          >
+            <Heart size={14} className="heart-icon" fill={isBlessed ? 'currentColor' : 'none'} />
+            <span className="count">{item.bless_count || 0}</span>
+
+            {poppingId === item.id && (
+              <div className="confetti-container">
+                {Array.from({ length: 6 }).map((_, i) => {
+                  const angle = (i * 60) * (Math.PI / 180);
+                  const distance = 30;
+                  const tx = `${Math.cos(angle) * distance}px`;
+                  const ty = `${Math.sin(angle) * distance}px`;
+                  return <div key={i} className="confetti-particle" style={{ '--tx': tx, '--ty': ty }}></div>;
+                })}
+              </div>
+            )}
+          </button>
+        </div>
+      </div>
+    </motion.article>
+  );
+}, (prevProps, nextProps) => {
+  // Only re-render if these specific props change
+  return (
+    prevProps.item === nextProps.item &&
+    prevProps.isBlessed === nextProps.isBlessed &&
+    prevProps.isSaved === nextProps.isSaved &&
+    prevProps.isNewlyAddedByMe === nextProps.isNewlyAddedByMe &&
+    prevProps.poppingId === nextProps.poppingId
+  );
+});
+
 const FeedRow = ({ items, currentUser, blessedIds, onBless, poppingId, direction = 'left', savedIds, onSave }) => {
   const containerRef = useRef(null);
-  const [expandedIds, setExpandedIds] = useState([]);
   const [singleSetWidth, setSingleSetWidth] = useState(0);
 
   const baseX = useMotionValue(0);
@@ -40,19 +124,11 @@ const FeedRow = ({ items, currentUser, blessedIds, onBless, poppingId, direction
   const baseVelocity = direction === 'left' ? -30 : 30;
 
   useAnimationFrame((t, delta) => {
-    let moveBy = baseVelocity * (delta / 1000);
+    // Cap delta to prevent massive jumps when main thread freezes (e.g. background tab or heavy render)
+    const cappedDelta = Math.min(delta, 32); 
+    let moveBy = baseVelocity * (cappedDelta / 1000);
     baseX.set(baseX.get() + moveBy);
   });
-
-  const formatTimeAgo = (dateString) => {
-    const diff = Date.now() - new Date(dateString).getTime();
-    const minutes = Math.floor(diff / 60000);
-    if (minutes < 1) return 'Just now';
-    if (minutes < 60) return `${minutes}m ago`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
-    return `${Math.floor(hours / 24)}d ago`;
-  };
 
   return (
     <div className="feed-row-container infinite">
@@ -65,80 +141,18 @@ const FeedRow = ({ items, currentUser, blessedIds, onBless, poppingId, direction
           const isBlessed = blessedIds.includes(item.id);
           const isSaved = savedIds.includes(item.id);
           const isNewlyAddedByMe = item.author === currentUser && (Date.now() - new Date(item.created_at).getTime()) < 10000;
-          const isLong = item.text.length > TRUNCATE_LENGTH;
-          const isExpanded = expandedIds.includes(item.id);
-          const displayText = isLong && !isExpanded ? item.text.slice(0, TRUNCATE_LENGTH) + '...' : item.text;
 
           return (
-            <motion.article
+            <FeedCard
               key={`${item.id}-${idx}`}
-              className={`gallery-card glass-panel ${isNewlyAddedByMe ? 'highlight-new' : ''} ${isExpanded ? 'expanded' : ''}`}
-              initial={isNewlyAddedByMe ? { opacity: 0, scale: 0.9 } : false}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.4, type: 'spring', bounce: 0.3 }}
-            >
-              <p className="gallery-card-text">"{displayText}"</p>
-              {isLong && (
-                <button
-                  className={`expand-btn ${isExpanded ? 'expanded' : ''}`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setExpandedIds(prev =>
-                      prev.includes(item.id)
-                        ? prev.filter(id => id !== item.id)
-                        : [...prev, item.id]
-                    );
-                  }}
-                >
-                  <span>{isExpanded ? '접기' : '더보기'}</span>
-                  <ChevronDown size={14} />
-                </button>
-              )}
-              <div className="gallery-card-footer">
-                <div className="card-meta">
-                  <span className="author">{item.author}</span>
-                  <span className="dot">•</span>
-                  <span className="date">{formatTimeAgo(item.created_at)}</span>
-                </div>
-                <div className="card-actions">
-                  <button
-                    className={`save-btn ${isSaved ? 'active' : ''}`}
-                    onClick={(e) => { e.stopPropagation(); onSave(item); }}
-                    aria-label={isSaved ? '저장됨' : '저장하기'}
-                  >
-                    <Bookmark
-                      size={14}
-                      fill={isSaved ? 'currentColor' : 'none'}
-                    />
-                  </button>
-                  <button
-                    className={`bless-btn ${isBlessed ? 'active' : ''}`}
-                    onClick={(e) => { e.stopPropagation(); onBless(item.id); }}
-                    aria-label={isBlessed ? `Blessed (${item.bless_count || 0})` : `Bless this post`}
-                    disabled={isBlessed}
-                  >
-                    <Heart
-                      size={14}
-                      className="heart-icon"
-                      fill={isBlessed ? 'currentColor' : 'none'}
-                    />
-                    <span className="count">{item.bless_count || 0}</span>
-
-                    {poppingId === item.id && (
-                      <div className="confetti-container">
-                        {Array.from({ length: 6 }).map((_, i) => {
-                          const angle = (i * 60) * (Math.PI / 180);
-                          const distance = 30;
-                          const tx = `${Math.cos(angle) * distance}px`;
-                          const ty = `${Math.sin(angle) * distance}px`;
-                          return <div key={i} className="confetti-particle" style={{ '--tx': tx, '--ty': ty }}></div>;
-                        })}
-                      </div>
-                    )}
-                  </button>
-                </div>
-              </div>
-            </motion.article>
+              item={item}
+              isBlessed={isBlessed}
+              isSaved={isSaved}
+              isNewlyAddedByMe={isNewlyAddedByMe}
+              onBless={onBless}
+              onSave={onSave}
+              poppingId={poppingId}
+            />
           );
         })}
       </motion.div>
