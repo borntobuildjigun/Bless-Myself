@@ -222,6 +222,7 @@ const GlobalFeed = ({ currentUser, feedRef, newlyInsertedItem }) => {
     setPoppingId(id);
     setTimeout(() => setPoppingId(null), 600);
 
+    // Optimistic UI update
     const newBlessedIds = [...blessedIds, id];
     setBlessedIds(newBlessedIds);
     localStorage.setItem('blessed_ids', JSON.stringify(newBlessedIds));
@@ -233,9 +234,20 @@ const GlobalFeed = ({ currentUser, feedRef, newlyInsertedItem }) => {
       return item;
     }));
 
+    // Persist to DB
     const { error } = await supabase.rpc('increment_bless_count', { row_id: id });
     if (error) {
       console.error('Error incrementing bless count:', error);
+      // Rollback: undo optimistic update on failure
+      const rolledBackIds = newBlessedIds.filter(bid => bid !== id);
+      setBlessedIds(rolledBackIds);
+      localStorage.setItem('blessed_ids', JSON.stringify(rolledBackIds));
+      setFeedItems(prevItems => prevItems.map(item => {
+        if (item.id === id) {
+          return { ...item, bless_count: Math.max((item.bless_count || 1) - 1, 0) };
+        }
+        return item;
+      }));
     }
   };
 
