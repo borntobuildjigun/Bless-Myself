@@ -25,7 +25,7 @@ const FeedRow = ({ items, currentUser, blessedIds, onBless, poppingId, direction
         baseX.set(-distance);
       }
     }
-  }, [items, direction, baseX]);
+  }, [items.length, direction, baseX]);
 
   const wrap = (min, max, v) => {
     const rangeSize = max - min;
@@ -237,7 +237,7 @@ const GlobalFeed = ({ currentUser, feedRef, newlyInsertedItem }) => {
     // Persist to DB
     const { error } = await supabase.rpc('increment_bless_count', { row_id: id });
     if (error) {
-      console.error('Error incrementing bless count:', error);
+      console.error('Error incrementing bless count:', JSON.stringify(error, null, 2));
       // Rollback: undo optimistic update on failure
       const rolledBackIds = newBlessedIds.filter(bid => bid !== id);
       setBlessedIds(rolledBackIds);
