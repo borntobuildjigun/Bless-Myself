@@ -8,7 +8,7 @@ const TRUNCATE_LENGTH = 80;
 const FeedRow = ({ items, currentUser, blessedIds, onBless, poppingId, direction = 'left' }) => {
   const containerRef = useRef(null);
   const [expandedIds, setExpandedIds] = useState([]);
-  const [isPanning, setIsPanning] = useState(false);
+  const isPanningRef = useRef(false);
   const [singleSetWidth, setSingleSetWidth] = useState(0);
 
   const baseX = useMotionValue(0);
@@ -44,7 +44,7 @@ const FeedRow = ({ items, currentUser, blessedIds, onBless, poppingId, direction
   const baseVelocity = direction === 'left' ? -30 : 30;
 
   useAnimationFrame((t, delta) => {
-    if (isPanning) return;
+    if (isPanningRef.current) return;
     let moveBy = baseVelocity * (delta / 1000);
     baseX.set(baseX.get() + moveBy);
   });
@@ -65,11 +65,11 @@ const FeedRow = ({ items, currentUser, blessedIds, onBless, poppingId, direction
         ref={containerRef}
         className="feed-row"
         style={{ x }}
-        onPanStart={() => setIsPanning(true)}
+        onPanStart={() => { isPanningRef.current = true; }}
         onPan={(e, info) => {
           baseX.set(baseX.get() + info.delta.x);
         }}
-        onPanEnd={() => setIsPanning(false)}
+        onPanEnd={() => { isPanningRef.current = false; }}
       >
         {[...items, ...items].map((item, idx) => {
           const isBlessed = blessedIds.includes(item.id);
