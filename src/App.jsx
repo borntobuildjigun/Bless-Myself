@@ -228,7 +228,7 @@ function App() {
   };
 
   return (
-    <Router>
+    <Router basename="/Bless-Myself">
       <div className="app-container">
         <Header onOpenSettings={() => setIsGlobalModalOpen(true)} session={session} />
         <main className="main-content">
