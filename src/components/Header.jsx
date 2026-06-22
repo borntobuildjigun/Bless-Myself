@@ -2,7 +2,7 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Globe, Leaf, Home } from 'lucide-react';
 
-const Header = ({ onOpenSettings }) => {
+const Header = ({ onOpenSettings, session }) => {
   const location = useLocation();
   const isArchive = location.pathname === '/archive';
 
@@ -23,6 +23,11 @@ const Header = ({ onOpenSettings }) => {
         <h1 className="logo-text">Bless Myself</h1>
       </div>
       <div className="header-right">
+        {!session && (
+          <button className="signup-btn" onClick={onOpenSettings}>
+            회원가입
+          </button>
+        )}
         <button className="icon-btn" onClick={onOpenSettings} aria-label="Global / Settings">
           <Globe size={24} />
         </button>

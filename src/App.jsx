@@ -230,7 +230,7 @@ function App() {
   return (
     <Router>
       <div className="app-container">
-        <Header onOpenSettings={() => setIsGlobalModalOpen(true)} />
+        <Header onOpenSettings={() => setIsGlobalModalOpen(true)} session={session} />
         <main className="main-content">
           <Routes>
             <Route path="/" element={<Home nickname={nickname} onAddBlessing={handleAddBlessing} />} />

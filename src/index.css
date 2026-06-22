@@ -52,13 +52,41 @@ body {
   border-bottom: 1px solid var(--glass-border);
 }
 
-.header-left, .header-right {
-  width: 48px;
+.header-left {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.header-right {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
 }
 
 .header-center {
-  flex: 1;
+  flex: 2;
   text-align: center;
+}
+
+.signup-btn {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.875rem;
+  background: var(--accent-color);
+  color: white;
+  border: none;
+  border-radius: 999px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.signup-btn:hover {
+  background: var(--accent-hover);
+  transform: scale(1.05);
 }
 
 .logo-text {
